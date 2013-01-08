@@ -1,0 +1,150 @@
+#!/bin/bash
+
+# TODO:
+#	- Localização dinâmica dos caminhos do bind, apache, init.d e outros.
+#	- Compatibilidade entre distribuições e scripts de inicialização.
+
+PATCH_BIND="/etc/bind"		#$(whereis bind|awk '{print($2)}')
+PATCH_HTTP="/etc/apache2"
+PATCH_ACME="${PATCH_BIND}/dnsjunkie"
+PATCH_CONF="${PATCH_ACME}/dnsjunkie.conf"
+PATCH_NAME="${PATCH_BIND}/named.conf"
+
+DOCUMENT_ROOT=${3:-'/var/www'}
+
+APACHE_CONF=''
+
+echo -e "This is not a life-savior boat.
+    _       ____   __  __   _____     ____  _   _ ____  
+   / \     / ___| |  \/  | | ____|   |  _ \| \ | / ___| 
+  / _ \   | |     | |\/| | |  _|     | | | |  \| \___ \ 
+ / ___ \ _| |___ _| |  | |_| |___ _  | |_| | |\  |___) |
+/_/   \_(_)\____(_)_|  |_(_)_____(_) |____/|_| \_|____/ 
+                 \e[1mversion 0.00-1 by John Murowaniecki\e[0m
+"
+
+function __help()
+{
+	echo -e "Este script utiliza os serviços BIND9, Named e Apache2 para funcionar, certifique-se de que eles estejam instalados e funcionando corretamente antes de prosseguir. Dependendo do seu sistema operacional ou distribuição os nomes dos caminhos para os arquivos de configuração podem variar - e isso é um problema, visto que esse é um script meio burro. (:
+
+Alguns comandos podem ser utilizados:
+	\e[1m$1 test\e[0m
+		Para efetuar uma verificação se seu sistema possúi
+		tudo o que é necessário para que esse trapo funcione.
+
+	\e[1m$1 help\e[0m
+		exibe esse texto.
+
+	\e[1m$1 list\e[0m
+		Lista domínios instalados por este script.
+
+	\e[1m$1 [add|del] dominio\e[0m
+		Adicionar domínio ao BIND e ao Apache2.
+"
+}
+
+function __err()
+{
+	echo -e "$1. Try some \e[1m$2\e[0m"
+}
+
+if [ ! ${UID} -eq 0 ]; then
+	__err "I need some privileges" "SUDO.."
+	#exit 1
+fi
+
+if [ ! -e "${PATCH_NAME}" ]; then
+	__err "named.conf not found at ${PATCH_BIND}" "\`$0 help\`"
+	#exit 1
+fi
+
+case $1 in
+	add)
+		echo -n "Verificando referências em named.conf.. "
+		if [ ! -w ${PATCH_NAME} ]; then
+			echo -e "\e[31mArquivo protegido contra gravação.\e[0m"
+			exit 1
+		elif [ `cat ${PATCH_NAME}|grep ${PATCH_CONF}|wc -l` -eq 0 ]; then
+			echo -e "include \"${PATCH_CONF}\";" >> ${PATCH_NAME}
+			echo -e "\e[32mAdicionado\e[0m."
+		else
+			echo 'Ok.'
+		fi
+
+		echo -n "Verificando dependências de dnsjunkie (diretório).. "
+		if [ ! -e ${PATCH_ACME} ]; then
+			mkdir ${PATCH_ACME}
+			echo -e "\e[32mAdicionado\e[0m."
+		elif [ ! -w ${PATCH_ACME} ]; then
+			echo -e "\e[31mDiretório protegido contra gravação.\e[0m"
+			echo "Verifique as permissões de ${PATCH_ACME}."
+			exit 1
+		else
+			echo 'Ok.'
+		fi
+
+		echo -n "Verificando dependências de dnsjunkie   (arquivo).. "
+		if [ ! -e ${PATCH_CONF} ]; then
+			touch ${PATCH_CONF}
+			echo -e "\e[32mAdicionado\e[0m."
+		elif [ ! -w ${PATCH_CONF} ]; then
+			echo -e "\e[31mArquivo protegido contra gravação.\e[0m"
+			echo "Verifique as permissões de ${PATCH_CONF}."
+			exit 1
+		else
+			echo 'Ok.'
+		fi
+
+		DOMAIN_NAME=$(echo -n "$2"|sed s/www.// )
+
+		echo -e "
+zone \"${DOMAIN_NAME}\" IN {
+	type master;
+	file \"${PATCH_ACME}/db.${DOMAIN_NAME}\";
+	allow-update { \"none\"; };
+};
+" > "${PATCH_ACME}/zone.${DOMAIN_NAME}"
+
+		echo "@ IN SOA root.${DOMAIN_NAME}. hostmaster.${DOMAIN_NAME}. (
+		13001
+		3600
+		900
+		604800
+		86400 )
+@	IN NS ns1.${DOMAIN_NAME}.
+
+www IN A 127.0.0.1
+ns1 IN A 127.0.0.1
+ns2 IN A 127.0.0.1
+ftp IN A 127.0.0.1
+mail IN A 127.0.0.1
+" > "${PATCH_ACME}/db.${DOMAIN_NAME}"
+
+		echo -e "include \"${PATCH_ACME}/zone.${DOMAIN_NAME}\";" >> ${PATCH_CONF}
+
+		/etc/init.d/bind9 restart
+
+		# create apache site file
+		echo "<VirtualHost *:80>
+	ServerAdmin ${USER}@${HOSTNAME}
+	ServerName ${DOMAIN_NAME}
+	ServerAlias ${DOMAIN_NAME} ${DOMAIN_NAME}
+	DocumentRoot ${DOCUMENT_ROOT}/${DOMAIN_NAME}
+</VirtualHost>
+" > ${PATCH_HTTP}/sites-available/${DOMAIN_NAME}
+
+		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME} ] && mkdir ${DOCUMENT_ROOT}/${DOMAIN_NAME}
+		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php ] && echo "<?php phpinfo(); ?>" > ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php
+
+		a2ensite ${DOMAIN_NAME}
+
+		/etc/init.d/apache2 restart
+	;;
+
+	help|*)
+		#tail -n $(expr $(grep -n 'exit 0' $0|awk -F: '{if(NR==2)print($1)}') - $(wc -l $0|awk '{print($1)}')) $0
+		__help $0
+
+esac
+
+exit 0
