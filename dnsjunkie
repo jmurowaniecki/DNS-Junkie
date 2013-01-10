@@ -31,7 +31,7 @@ PATCH_ACME="${PATCH_BIND}/dnsjunkie"
 PATCH_CONF="${PATCH_ACME}/dnsjunkie.conf"
 PATCH_NAME="${PATCH_BIND}/named.conf"
 
-DOCUMENT_ROOT=${3:-'/var/www'}
+DOCUMENT_ROOT=${4:-'/var/www'}
 
 APACHE_CONF=''
 
@@ -140,12 +140,24 @@ ns2 IN A 127.0.0.1
 ftp IN A 127.0.0.1
 mail IN A 127.0.0.1
 " > "${PATCH_ACME}/db.${DOMAIN_NAME}"
+		if [ $# -gt 2 ]; then
+			for buffer in $3
+			do
+				echo "${buffer} IN A 127.0.0.1" >> "${PATCH_ACME}/db.${DOMAIN_NAME}"
+			done
+		fi
 
 		echo -e "include \"${PATCH_ACME}/zone.${DOMAIN_NAME}\";" >> ${PATCH_CONF}
 
 		/etc/init.d/bind9 restart
 
+
+
 		# create apache site file
+
+		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME} ] && mkdir ${DOCUMENT_ROOT}/${DOMAIN_NAME}
+		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php ] && echo "<?php phpinfo(); ?>" > ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php
+
 		echo "<VirtualHost *:80>
 	ServerAdmin ${USER}@${HOSTNAME}
 	ServerName ${DOMAIN_NAME}
@@ -153,9 +165,20 @@ mail IN A 127.0.0.1
 	DocumentRoot ${DOCUMENT_ROOT}/${DOMAIN_NAME}
 </VirtualHost>
 " > ${PATCH_HTTP}/sites-available/${DOMAIN_NAME}
-
-		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME} ] && mkdir ${DOCUMENT_ROOT}/${DOMAIN_NAME}
-		[ ! -e ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php ] && echo "<?php phpinfo(); ?>" > ${DOCUMENT_ROOT}/${DOMAIN_NAME}/index.php
+		if [ $# -gt 2 ]; then
+			for buffer in $3
+			do
+				echo "
+<VirtualHost *:80>
+	ServerAdmin ${USER}@${HOSTNAME}
+	ServerName ${buffer}.${DOMAIN_NAME}
+	ServerAlias ${buffer}.${DOMAIN_NAME} ${buffer}.${DOMAIN_NAME}
+	DocumentRoot ${DOCUMENT_ROOT}/${buffer}.${DOMAIN_NAME}
+</VirtualHost>
+" >> ${PATCH_HTTP}/sites-available/${DOMAIN_NAME}
+				ln -s ${DOCUMENT_ROOT}/${DOMAIN_NAME} ${DOCUMENT_ROOT}/${buffer}.${DOMAIN_NAME}
+			done
+		fi
 
 		a2ensite ${DOMAIN_NAME}
 
