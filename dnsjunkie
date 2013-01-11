@@ -24,12 +24,15 @@
 # TODO:
 #	- Localização dinâmica dos caminhos do bind, apache, init.d e outros.
 #	- Compatibilidade entre distribuições e scripts de inicialização.
+#	- Impedir o registro de domínios e subdomínios com underline.
+#	- Listagem de domínios cadastrados.
+#	- Remoção de domínios cadastrados.
 
 PATCH_BIND="/etc/bind"		#$(whereis bind|awk '{print($2)}')
 PATCH_HTTP="/etc/apache2"
+PATCH_NAME=`locate named.conf | awk '{if(NR==1) print($1);}'` #"${PATCH_BIND}/named.conf"
+PATCH_CONF=`locate dnsjunkie.conf | awk '{if(NR==1) print($1);}'` #"${PATCH_ACME}/dnsjunkie.conf"
 PATCH_ACME="${PATCH_BIND}/dnsjunkie"
-PATCH_CONF="${PATCH_ACME}/dnsjunkie.conf"
-PATCH_NAME="${PATCH_BIND}/named.conf"
 
 DOCUMENT_ROOT=${4:-'/var/www'}
 
