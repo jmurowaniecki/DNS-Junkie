@@ -28,15 +28,24 @@
 #	- Listagem de domínios cadastrados.
 #	- Remoção de domínios cadastrados.
 
-PATCH_BIND="/etc/bind"		#$(whereis bind|awk '{print($2)}')
-PATCH_HTTP="/etc/apache2"
-PATCH_NAME=`locate named.conf | awk '{if(NR==1) print($1);}'` #"${PATCH_BIND}/named.conf"
+for arg in $*
+do	define ${arg}
+done
+
+DEFAULT_PATCH_NAMED=`locate named.conf | awk '{if(NR==1) print($1);}'` #"${PATCH_BIND}/named.conf"
+DEFAULT_PATCH_HTTPD="/etc/apache2"
+DEFAULT_PATCH_BIND9="/etc/bind" #$(whereis bind|awk '{print($2)}')
+
+PATCH_BIND=${bind9:-${DEFAULT_PATCH_BIND9}}
+PATCH_HTTP=${httpd:-${DEFAULT_PATCH_HTTPD}}
+PATCH_NAME=${named:-${DEFAULT_PATCH_NAMED}}
 PATCH_CONF=`locate dnsjunkie.conf | awk '{if(NR==1) print($1);}'` #"${PATCH_ACME}/dnsjunkie.conf"
 PATCH_ACME="${PATCH_BIND}/dnsjunkie"
 
-DOCUMENT_ROOT=${4:-'/var/www'}
+DOCUMENT_ROOT=${htdocs:-'/var/www'}
 
-APACHE_CONF=''
+DOMAIN_NAME=$(echo -n "${domain:-$2}"|sed s/www.// )
+DOMAIN_SUBD=${subdomain:-${subdomains:-$3}}
 
 echo -e "This is not a life-savior boat.
     _       ____   __  __   _____     ____  _   _ ____  
@@ -51,19 +60,44 @@ function __help()
 {
 	echo -e "Este script utiliza os serviços BIND9, Named e Apache2 para funcionar, certifique-se de que eles estejam instalados e funcionando corretamente antes de prosseguir. Dependendo do seu sistema operacional ou distribuição os nomes dos caminhos para os arquivos de configuração podem variar - e isso é um problema, visto que esse é um script meio burro. (:
 
-Alguns comandos podem ser utilizados:
-	\e[1m$1 test\e[0m
-		Para efetuar uma verificação se seu sistema possúi
-		tudo o que é necessário para que esse trapo funcione.
+Linha de comando:
+    \e[1m$1 comando\e[0m [variavel=valor variavel=valor variavel=valor]
 
-	\e[1m$1 help\e[0m
-		exibe esse texto.
+Listagem de comandos que podem ser utilizados:
+    \e[1mtest\e[0m        Para efetuar uma verificação se seu sistema possúi
+                tudo o que é necessário para que esse trapo funcione.
 
-	\e[1m$1 list\e[0m
-		Lista domínios instalados por este script.
+    \e[1mhelp\e[0m        Exibe esse texto.
 
-	\e[1m$1 [add|del] dominio\e[0m
-		Adicionar domínio ao BIND e ao Apache2.
+    \e[1mlist\e[0m        Lista domínios instalados por este script.
+
+    \e[1madd|del\e[0m     Adicionar domínio ao BIND e ao Apache2.
+
+
+Listagem de variáveis utilizadas:
+    \e[1mbind9\e[0m       Define caminho pra a pasta de configuração do Bind9 ou
+                utiliza como padrão '/etc/bind'.
+
+    \e[1mhttpd\e[0m       Define caminho pra a pasta de configuração do Apache2
+                ou utiliza como padrão '/etc/apache2'.
+
+    \e[1mnamed\e[0m       Define caminho pra o arquivo de configuração do arquivo
+                Named (arquivo named.conf).
+
+    \e[1mhtdocs\e[0m      Define caminho pra a pasta htdocs do domínio informado
+                ou utiliza como padrão '/var/www'.
+
+    \e[1mdomain\e[0m      Define domínio a ser cadastrado. Pode ser utilizado como
+                terceiro parâmetro:
+                \e[1m$1 add domínio\e[0m
+
+    \e[1msubdomains\e[0m
+    \e[1msubdomain\e[0m   Lista subdomínios domínios a serem configurados. Pode
+                ser utilizado como quarto parâmetro:
+                \e[1m$1 add domínio \"cpanel proxy webmail\"\e[0m
+                *** não utilize subdomínios contendo caracteres especiais como ***
+                ***  '_-#\$%@!*\" entre outros, utilize apenas letras e números  ***
+31337
 "
 }
 
@@ -119,8 +153,6 @@ case $1 in
 			echo 'Ok.'
 		fi
 
-		DOMAIN_NAME=$(echo -n "$2"|sed s/www.// )
-
 		echo -e "
 zone \"${DOMAIN_NAME}\" IN {
 	type master;
@@ -143,8 +175,8 @@ ns2 IN A 127.0.0.1
 ftp IN A 127.0.0.1
 mail IN A 127.0.0.1
 " > "${PATCH_ACME}/db.${DOMAIN_NAME}"
-		if [ $# -gt 2 ]; then
-			for buffer in $3
+		if [ "${DOMAIN_SUBD}" -eq "" ]; then
+			for buffer in ${DOMAIN_SUBD}
 			do
 				echo "${buffer} IN A 127.0.0.1" >> "${PATCH_ACME}/db.${DOMAIN_NAME}"
 			done
@@ -168,8 +200,8 @@ mail IN A 127.0.0.1
 	DocumentRoot ${DOCUMENT_ROOT}/${DOMAIN_NAME}
 </VirtualHost>
 " > ${PATCH_HTTP}/sites-available/${DOMAIN_NAME}
-		if [ $# -gt 2 ]; then
-			for buffer in $3
+		if [ "${DOMAIN_SUBD}" -eq "" ]; then
+			for buffer in ${DOMAIN_SUBD}
 			do
 				echo "
 <VirtualHost *:80>
