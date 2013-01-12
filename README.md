@@ -25,7 +25,7 @@ Este script utiliza os serviços BIND9, Named e Apache2 para funcionar, certifiq
 
 Usage
 -----
-`dnsjunkie comando [variavel=valor variavel=valor variavel=valor]`
+	dnsjunkie comando [variavel=valor variavel=valor variavel=valor]
 
 ### Listagem de comandos que podem ser utilizados:
 * `test` -- Para efetuar uma verificação se seu sistema possúi tudo o que é necessário para que esse trapo funcione.
@@ -49,3 +49,14 @@ Usage
 
 * `subdomains` ou `subdomain` -- Lista de subdomínios domínios a serem configurados. Pode ser utilizado como quarto parâmetro `dnsjunkie add domínio "cpanel proxy webmail"`
 Não utilize subdomínios contendo caracteres especiais como '_-#$%@!*" entre outros, utilize apenas letras e números*
+
+Examples of usage
+-----------------
+This example will create `somedomain.com` with `users`, `admin`, `panel` and `help` as subdomains.
+	dnsjunkie add somedomain.com "users admin panel help"
+Also you can use 
+	dnsjunkie add domain=somedomain.com subdomains="users admin panel help"
+To obtain exactly the same result.
+
+If you have customized `htdocs` you'll need declarate the path of your htdoc or the Apache virtual server will brick on restart.
+	dnsjunkie add domain=somedomain.com subdomains="users admin panel help" htdocs="/mnt/external_drive/www"
