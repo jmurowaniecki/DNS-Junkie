@@ -53,10 +53,15 @@ Não utilize subdomínios contendo caracteres especiais como '_-#$%@!*" entre ou
 Examples of usage
 -----------------
 This example will create `somedomain.com` with `users`, `admin`, `panel` and `help` as subdomains.
+
     dnsjunkie add somedomain.com "users admin panel help"
+
 Also you can use 
+
     dnsjunkie add domain=somedomain.com subdomains="users admin panel help"
+
 To obtain exactly the same result.
 
 If you have customized `htdocs` you'll need declarate the path of your htdoc or the Apache virtual server will brick on restart.
-	dnsjunkie add domain=somedomain.com subdomains="users admin panel help" htdocs="/mnt/external_drive/www"
+
+    dnsjunkie add domain=somedomain.com subdomains="users admin panel help" htdocs="/mnt/external_drive/www"
