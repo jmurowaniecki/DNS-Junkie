@@ -13,42 +13,38 @@ You should have received a copy of the GNU General Public License along with DNS
 
 TODO
 -----
-- Localização dinâmica dos caminhos do bind, apache, init.d e outros.
-- Compatibilidade entre distribuições e scripts de inicialização.
-- Impedir o registro de domínios e subdomínios com underline.
-- Listagem de domínios cadastrados.
-- Remoção de domínios cadastrados.
+- Dinamic localization of bind, apache, init.d and others resources no matter what distribuition you're using;
+- Distribution compatibility;
+- Filter domains and subdomais with special characters;
+- List of saved domains;
+- Remotion of saved domains;
 
 Warning
 -------
-Este script utiliza os serviços BIND9, Named e Apache2 para funcionar, certifique-se de que eles estejam instalados e funcionando corretamente antes de prosseguir. Dependendo do seu sistema operacional ou distribuição os nomes dos caminhos para os arquivos de configuração podem variar - e isso é um problema, visto que esse é um script meio burro. (:
+This script uses bind9, named and apache2 to work, be sure that you have them installed and working correctly before continue. Depending on your operational system distribution some paths for configuration files may difefr - and that's a huge problem, this script is slack and dumb. (:
 
 Usage
 -----
-	dnsjunkie comando [variavel=valor variavel=valor variavel=valor]
+	dnsjunkie comando [variable=value variable=value variable=value]
 
-### Listagem de comandos que podem ser utilizados:
-* `test` -- Para efetuar uma verificação se seu sistema possúi tudo o que é necessário para que esse trapo funcione.
+### Listing of commands that can be used:
+* `help` -- shows help.
 
-* `help` -- Exibe esse texto.
+* `add` -- Add domains.
 
-* `list` -- Lista domínios instalados por este script.
+### Variables list
+* `bind9` -- Defines the path for Bind9 '/etc/bind'.
 
-* `add|del` -- Adicionar domínio ao BIND e ao Apache2.
+* `httpd` -- Defines the path Apache2 '/etc/apache2'.
 
-### Listagem de variáveis utilizadas:
-* `bind9` -- Define caminho pra a pasta de configuração do Bind9 ou utiliza como padrão '/etc/bind'.
+* `named` -- Defines the path to Named 'named.conf'.
 
-* `httpd` -- Define caminho pra a pasta de configuração do Apache2 ou utiliza como padrão '/etc/apache2'.
+* `htdocs` -- Defines the path to htdocs '/var/www'.
 
-* `named` -- Define caminho pra o arquivo de configuração do arquivo Named (arquivo named.conf).
+* `domain` -- Defines the domain to be added: `dnsjunkie add domain.com`
 
-* `htdocs` -- Define caminho pra a pasta htdocs do domínio informado ou utiliza como padrão '/var/www'.
-
-* `domain` -- Define domínio a ser cadastrado. Pode ser utilizado como terceiro parâmetro: `dnsjunkie add domínio`
-
-* `subdomains` ou `subdomain` -- Lista de subdomínios domínios a serem configurados. Pode ser utilizado como quarto parâmetro `dnsjunkie add domínio "cpanel proxy webmail"`
-Não utilize subdomínios contendo caracteres especiais como '_-#$%@!*" entre outros, utilize apenas letras e números*
+* `subdomains` ou `subdomain` -- Subdomain list. Also can be used as fourth parameter `dnsjunkie add domínio "cpanel proxy webmail"`
+Do not use subdomains with special characters as '_-#$%@!*", and anothers, use only letters and numbers.
 
 Examples of usage
 -----------------
