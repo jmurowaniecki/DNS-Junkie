@@ -25,7 +25,7 @@ This script uses bind9, named and apache2 to work, be sure that you have them in
 
 Usage
 -----
-	dnsjunkie comando [variable=value variable=value variable=value]
+	dnsjunkie command [variable=value variable=value variable=value]
 
 ### Listing of commands that can be used:
 * `help` -- shows help.
@@ -43,7 +43,7 @@ Usage
 
 * `domain` -- Defines the domain to be added: `dnsjunkie add domain.com`
 
-* `subdomains` ou `subdomain` -- Subdomain list. Also can be used as fourth parameter `dnsjunkie add domínio "cpanel proxy webmail"`
+* `subdomains` ou `subdomain` -- Subdomain list. Also can be used as fourth parameter `dnsjunkie add domain.com "cpanel proxy webmail"`
 Do not use subdomains with special characters as '_-#$%@!*", and anothers, use only letters and numbers.
 
 Examples of usage
